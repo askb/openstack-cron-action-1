@@ -395,6 +395,7 @@ runs:
         STEP_PROTECTED_COUNT: ${{ steps.protect-images.outputs.protected_count || '0' }}
         STEP_IMAGES_COUNT: ${{ steps.cleanup-images.outputs.deleted_count || '0' }}
         STEP_SMART_UNPROTECTED: ${{ steps.cleanup-images-smart.outputs.unprotected_count || '0' }}
+        STEP_STACKS_FAILED: ${{ steps.cleanup-stacks.outputs.failed || 'false' }}
       run: |
         # Collect outputs from all steps
         k8s_count="${STEP_K8S_COUNT:-0}"
@@ -410,12 +411,20 @@ runs:
         sum2=$((ports_count + volumes_count + images_count))
         total=$((sum1 + sum2))
 
+        if [[ "$STEP_STACKS_FAILED" == "true" ]]; then
+          status_line="❌ Stack cleanup failed"
+          status="failure"
+        else
+          status_line="✅ Completed"
+          status="success"
+        fi
+
         # Generate summary for GitHub Actions UI
         {
           echo "### 🧹 OpenStack Cleanup Summary"
           echo ""
           echo "**Cloud**: $INPUT_OPENSTACK_CLOUD"
-          echo "**Status**: ✅ Completed"
+          echo "**Status**: ${status_line}"
           echo "**Timestamp**: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
           echo ""
           echo "#### Resources Cleaned"
@@ -436,4 +445,11 @@ runs:
         # Set outputs
         echo "summary=Cleaned ${total} resources" >> "$GITHUB_OUTPUT"
         echo "resources_cleaned=${total}" >> "$GITHUB_OUTPUT"
-        echo "status=success" >> "$GITHUB_OUTPUT"
+        echo "status=${status}" >> "$GITHUB_OUTPUT"
+
+    - name: Fail on stack cleanup errors
+      if: ${{ always() && steps.cleanup-stacks.outputs.failed == 'true' }}
+      shell: bash
+      run: |
+        echo "::error::Stack cleanup failed; see the Cleanup Stacks step log"
+        exit 1

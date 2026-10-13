@@ -35,11 +35,10 @@ if [[ -n "$jenkins_urls" ]]; then
         echo "✅ Stack cleanup complete"
     else
         exit_code=$?
-        echo "⚠️  Stack cleanup failed with exit code $exit_code"
-        echo "⚠️  Known issue: lftools delete() method signature mismatch"
+        echo "::error::Stack cleanup failed with exit code $exit_code"
         echo "deleted_count=0" >> "${GITHUB_OUTPUT:-/dev/null}"
-        # Don't fail the entire workflow for this known issue
-        exit 0
+        # Let the remaining cleanup steps run; the action fails at the end
+        echo "failed=true" >> "${GITHUB_OUTPUT:-/dev/null}"
     fi
 else
     echo "⚠️  No Jenkins URLs provided, skipping stack cleanup"

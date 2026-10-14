@@ -263,6 +263,8 @@ jobs:
 - Identifies orphaned Heat stacks
 - Checks Jenkins for active builds using the stack
 - Removes stacks not in active use
+- A stack cleanup error fails the action after the remaining cleanup
+  steps run, so the failure notification fires
 
 ### 3. Servers (`cleanup_servers`)
 
